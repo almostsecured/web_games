@@ -38,7 +38,7 @@
     lastTime: 0,
     scoreLeft: 0,
     scoreRight: 0,
-    scoreLimit: 9,
+    scoreLimit: 7,
     vfxBoost: true,
     mode: "local",
     role: "left",
@@ -148,7 +148,7 @@
       if (this.enabledMusic) {
         this.music.play().then(() => {
           if (!this.enabledMusic) this.music.pause();
-        }).catch(() => {});
+        }).catch(() => { });
       }
     },
 
@@ -156,7 +156,7 @@
       this.enabledMusic = on;
       if (!this.ready) return;
       if (on) {
-        this.music.play().catch(() => {});
+        this.music.play().catch(() => { });
       } else {
         this.music.pause();
       }
@@ -172,7 +172,7 @@
       if (!pool || pool.length === 0) return;
       const sound = pool.shift();
       sound.currentTime = 0;
-      sound.play().catch(() => {}).finally(() => pool.push(sound));
+      sound.play().catch(() => { }).finally(() => pool.push(sound));
     },
   };
 
