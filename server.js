@@ -10,7 +10,7 @@ const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 const BASE = { w: 1280, h: 720 };
 const PADDLE = { w: 18, h: 130 };
 const BALL = { r: 10, speed: 520, maxSpeed: 980 };
-const SCORE_LIMIT = 9;
+
 
 const rooms = new Map();
 
@@ -197,7 +197,7 @@ class Client {
     }
 
     if (data.type === "create") {
-      const room = createRoom(this);
+      const room = createRoom(this, data.scoreLimit || 5);
       this.send({ type: "created", code: room.code });
       return;
     }
@@ -256,8 +256,9 @@ class Client {
 }
 
 class Room {
-  constructor(code) {
+  constructor(code, scoreLimit = 5) {
     this.code = code;
+    this.scoreLimit = scoreLimit;
     this.clients = { left: null, right: null };
     this.inputs = { left: BASE.h / 2, right: BASE.h / 2 };
     this.state = makeState();
@@ -301,10 +302,10 @@ class Room {
     this.ready.left = false;
     this.ready.right = false;
     if (this.clients.left) {
-      this.clients.left.send({ type: "start", role: "left", scoreLimit: SCORE_LIMIT, code: this.code });
+      this.clients.left.send({ type: "start", role: "left", scoreLimit: this.scoreLimit, code: this.code });
     }
     if (this.clients.right) {
-      this.clients.right.send({ type: "start", role: "right", scoreLimit: SCORE_LIMIT, code: this.code });
+      this.clients.right.send({ type: "start", role: "right", scoreLimit: this.scoreLimit, code: this.code });
     }
     this.lastTick = Date.now();
     if (!this.interval) {
@@ -371,7 +372,7 @@ class Room {
       if (state.ball.x < -60) {
         state.score.right += 1;
         this.broadcast({ type: "event", name: "score", x: BASE.w / 2, y: BASE.h / 2, tint: "score" });
-        if (state.score.right >= SCORE_LIMIT) {
+        if (state.score.right >= this.scoreLimit) {
           state.winner = "right";
           this.broadcast({ type: "gameover", winner: "right" });
           this.stop();
@@ -381,7 +382,7 @@ class Room {
       } else if (state.ball.x > BASE.w + 60) {
         state.score.left += 1;
         this.broadcast({ type: "event", name: "score", x: BASE.w / 2, y: BASE.h / 2, tint: "score" });
-        if (state.score.left >= SCORE_LIMIT) {
+        if (state.score.left >= this.scoreLimit) {
           state.winner = "left";
           this.broadcast({ type: "gameover", winner: "left" });
           this.stop();
@@ -403,12 +404,12 @@ class Room {
   }
 }
 
-function createRoom(client) {
+function createRoom(client, scoreLimit) {
   let code = generateCode();
   while (rooms.has(code)) {
     code = generateCode();
   }
-  const room = new Room(code);
+  const room = new Room(code, scoreLimit);
   rooms.set(code, room);
   room.addClient(client, "left");
   return room;

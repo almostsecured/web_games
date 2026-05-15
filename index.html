@@ -25,8 +25,17 @@
           <div class="menu-glow"></div>
           <div class="menu-body">
             <div id="screen-main" class="menu-screen is-active">
+              <div class="round-selector">
+                <p>Раунды</p>
+                <div class="round-controls">
+                  <button class="round-btn round-btn-minus">-</button>
+                  <span class="round-value-display">5</span>
+                  <button class="round-btn round-btn-plus">+</button>
+                </div>
+              </div>
               <div class="menu-actions">
                 <button id="local-btn" class="btn btn-primary">Игра на одном ПК</button>
+                <button id="bot-btn" class="btn btn-ghost">Игра с ботом</button>
                 <button id="online-btn" class="btn btn-ghost">Мультиплеер</button>
                 <button id="settings-btn" class="btn btn-ghost">Настройки</button>
                 <button id="restart-btn" class="btn btn-ghost">Перезапуск</button>
@@ -54,6 +63,14 @@
               <div class="lobby-grid">
                 <div class="lobby-card">
                   <h2>Создать лобби</h2>
+                  <div class="round-selector" style="margin-bottom: 12px;">
+                    <p>Раунды</p>
+                    <div class="round-controls">
+                      <button class="round-btn round-btn-minus">-</button>
+                      <span class="round-value-display">5</span>
+                      <button class="round-btn round-btn-plus">+</button>
+                    </div>
+                  </div>
                   <button id="create-lobby-btn" class="btn btn-primary">Создать</button>
                   <div id="lobby-code" class="lobby-code">----</div>
                   <p id="lobby-status" class="lobby-status">Ожидание</p>
@@ -92,6 +109,28 @@
               </div>
               <div class="lobby-actions">
                 <button id="settings-back-btn" class="btn btn-ghost">Назад</button>
+              </div>
+            </div>
+
+            <div id="screen-bot" class="menu-screen">
+              <div class="menu-header">
+                <h2 class="menu-title" style="font-size: clamp(24px, 4vw, 36px); margin-bottom: 24px;">Выберите сложность</h2>
+              </div>
+              <div class="round-selector">
+                <p>Раунды</p>
+                <div class="round-controls">
+                  <button class="round-btn round-btn-minus">-</button>
+                  <span class="round-value-display">5</span>
+                  <button class="round-btn round-btn-plus">+</button>
+                </div>
+              </div>
+              <div class="menu-actions" style="flex-direction: column; align-items: center; gap: 16px;">
+                <button id="bot-easy-btn" class="btn btn-ghost" style="width: 200px;">Легкая</button>
+                <button id="bot-normal-btn" class="btn btn-ghost" style="width: 200px;">Нормальная</button>
+                <button id="bot-hard-btn" class="btn btn-ghost" style="width: 200px;">Сложная</button>
+              </div>
+              <div class="lobby-actions" style="margin-top: 32px;">
+                <button id="bot-back-btn" class="btn btn-ghost">Назад</button>
               </div>
             </div>
           </div>

@@ -7,6 +7,7 @@
   const winnerBanner = document.getElementById("winner-banner");
   const menuEl = document.getElementById("menu");
   const localBtn = document.getElementById("local-btn");
+  const botBtn = document.getElementById("bot-btn");
   const onlineBtn = document.getElementById("online-btn");
   const settingsBtn = document.getElementById("settings-btn");
   const restartBtn = document.getElementById("restart-btn");
@@ -15,6 +16,10 @@
   const lobbyBackBtn = document.getElementById("lobby-back-btn");
   const lobbyLeaveBtn = document.getElementById("lobby-leave-btn");
   const settingsBackBtn = document.getElementById("settings-back-btn");
+  const botEasyBtn = document.getElementById("bot-easy-btn");
+  const botNormalBtn = document.getElementById("bot-normal-btn");
+  const botHardBtn = document.getElementById("bot-hard-btn");
+  const botBackBtn = document.getElementById("bot-back-btn");
   const lobbyCodeEl = document.getElementById("lobby-code");
   const lobbyStatusEl = document.getElementById("lobby-status");
   const joinCodeGroup = document.getElementById("join-code");
@@ -22,6 +27,7 @@
   const screenMain = document.getElementById("screen-main");
   const screenLobby = document.getElementById("screen-lobby");
   const screenSettings = document.getElementById("screen-settings");
+  const screenBot = document.getElementById("screen-bot");
   const toggleMusic = document.getElementById("toggle-music");
   const toggleSfx = document.getElementById("toggle-sfx");
   const toggleVfx = document.getElementById("toggle-vfx");
@@ -38,10 +44,12 @@
     lastTime: 0,
     scoreLeft: 0,
     scoreRight: 0,
-    scoreLimit: 7,
+    scoreLimit: 5,
+    targetScoreLimit: 5,
     vfxBoost: true,
     mode: "local",
     role: "left",
+    botDifficulty: "normal",
   };
 
   const input = {
@@ -58,6 +66,7 @@
     main: screenMain,
     lobby: screenLobby,
     settings: screenSettings,
+    bot: screenBot,
   };
 
   const net = {
@@ -421,6 +430,9 @@
     if (state.mode === "online") {
       return state.winner === "left" ? "Победа" : "Поражение";
     }
+    if (state.mode === "bot") {
+      return state.winner === "left" ? "Люди победили" : "Роботы победили";
+    }
     return state.winner === "left" ? "Победа слева" : "Победа справа";
   }
 
@@ -459,6 +471,27 @@
     if (joinCodeBoxes[0]) joinCodeBoxes[0].focus();
   }
 
+  function startBotGame(difficulty) {
+    disconnectFromServer();
+    state.mode = "bot";
+    state.botDifficulty = difficulty;
+    state.role = "left";
+    state.running = true;
+    state.paused = false;
+    state.winner = null;
+    state.scoreLeft = 0;
+    state.scoreRight = 0;
+    state.scoreLimit = state.targetScoreLimit;
+    updateScore();
+    startServe(Math.random() > 0.5 ? 1 : -1);
+    setMenuVisible(false);
+    restartBtn.disabled = false;
+    restartBtn.classList.remove("btn-pulse");
+    setStatus("Игра с ботом");
+    updateWinnerBanner();
+    audio.unlock();
+  }
+
   function startLocalGame() {
     disconnectFromServer();
     state.mode = "local";
@@ -468,6 +501,7 @@
     state.winner = null;
     state.scoreLeft = 0;
     state.scoreRight = 0;
+    state.scoreLimit = state.targetScoreLimit;
     updateScore();
     startServe(Math.random() > 0.5 ? 1 : -1);
     setMenuVisible(false);
@@ -740,6 +774,43 @@
     }
   }
 
+  function updateBotPaddle(dt) {
+    let speedMult = 1;
+    let reactionError = 0;
+
+    if (state.botDifficulty === "easy") {
+      speedMult = 0.45;
+      reactionError = 80;
+    } else if (state.botDifficulty === "normal") {
+      speedMult = 0.75;
+      reactionError = 30;
+    } else if (state.botDifficulty === "hard") {
+      speedMult = 1.0;
+      reactionError = 5;
+    }
+
+    let targetY = ball.y;
+    targetY += Math.sin(state.time * 4) * reactionError;
+
+    if (ball.vx > 0) {
+      if (right.y < targetY - 15) {
+        updatePaddle(right, 1 * speedMult, dt);
+      } else if (right.y > targetY + 15) {
+        updatePaddle(right, -1 * speedMult, dt);
+      } else {
+        updatePaddle(right, 0, dt);
+      }
+    } else {
+      if (right.y < BASE.h / 2 - 20) {
+        updatePaddle(right, 0.4 * speedMult, dt);
+      } else if (right.y > BASE.h / 2 + 20) {
+        updatePaddle(right, -0.4 * speedMult, dt);
+      } else {
+        updatePaddle(right, 0, dt);
+      }
+    }
+  }
+
   function update(dt) {
     state.time += dt;
     if (state.mode === "online") {
@@ -756,11 +827,15 @@
 
     const leftInputY =
       (input.keys.has("KeyW") ? -1 : 0) + (input.keys.has("KeyS") ? 1 : 0);
-    const rightInputY =
-      (input.keys.has("ArrowUp") ? -1 : 0) + (input.keys.has("ArrowDown") ? 1 : 0);
-
     updatePaddle(left, leftInputY, dt);
-    updatePaddle(right, rightInputY, dt);
+
+    if (state.mode === "local") {
+      const rightInputY =
+        (input.keys.has("ArrowUp") ? -1 : 0) + (input.keys.has("ArrowDown") ? 1 : 0);
+      updatePaddle(right, rightInputY, dt);
+    } else if (state.mode === "bot") {
+      updateBotPaddle(dt);
+    }
 
     updateBall(dt);
   }
@@ -976,6 +1051,35 @@
   });
 
   localBtn.addEventListener("click", () => startLocalGame());
+  botBtn.addEventListener("click", () => setMenuVisible(true, "bot"));
+  botEasyBtn.addEventListener("click", () => startBotGame("easy"));
+  botNormalBtn.addEventListener("click", () => startBotGame("normal"));
+  botHardBtn.addEventListener("click", () => startBotGame("hard"));
+  botBackBtn.addEventListener("click", () => showScreen("main"));
+
+  const roundMinuses = document.querySelectorAll(".round-btn-minus");
+  const roundPluses = document.querySelectorAll(".round-btn-plus");
+  const roundDisplays = document.querySelectorAll(".round-value-display");
+
+  function updateRoundDisplays() {
+    roundDisplays.forEach((el) => {
+      el.textContent = state.targetScoreLimit;
+    });
+  }
+
+  roundMinuses.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.targetScoreLimit = Math.max(1, state.targetScoreLimit - 1);
+      updateRoundDisplays();
+    });
+  });
+
+  roundPluses.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.targetScoreLimit = Math.min(99, state.targetScoreLimit + 1);
+      updateRoundDisplays();
+    });
+  });
   onlineBtn.addEventListener("click", () => {
     if (state.running && !state.paused) {
       pauseGame(true);
@@ -1023,7 +1127,7 @@
   });
 
   createLobbyBtn.addEventListener("click", () => {
-    connectToServer({ type: "create" });
+    connectToServer({ type: "create", scoreLimit: state.targetScoreLimit });
   });
 
   joinLobbyBtn.addEventListener("click", () => {
@@ -1039,6 +1143,8 @@
     if (state.mode === "online") {
       if (!state.winner) return;
       sendNet({ type: "ready" });
+    } else if (state.mode === "bot") {
+      startBotGame(state.botDifficulty);
     } else {
       startLocalGame();
     }
