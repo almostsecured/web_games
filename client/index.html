@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Windows XP Arcade Portal</title>
+    <link rel="stylesheet" href="xp.css" />
+    <style>
+      /* Additional styles for XP Dialogs and icons */
+      .xp-error-dialog {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 380px;
+        background: #f1f0e8;
+        border: 1px solid #0054e3;
+        border-radius: 4px 4px 0 0;
+        box-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+        display: flex;
+        flex-direction: column;
+        z-index: 100;
+        font-family: "Tahoma", sans-serif;
+        font-size: 12px;
+      }
+      .xp-dialog-titlebar {
+        background: linear-gradient(to bottom, #0058e6 0%, #0046b8 100%);
+        color: white;
+        padding: 5px 8px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 3px 3px 0 0;
+      }
+      .xp-dialog-close {
+        width: 16px;
+        height: 16px;
+        background: #e76c49;
+        border: 1px solid #b24123;
+        border-radius: 2px;
+        color: white;
+        font-weight: bold;
+        font-size: 11px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+      }
+      .xp-dialog-close:hover {
+        background: #ff7d55;
+      }
+      .xp-dialog-body {
+        padding: 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        background: #f1f0e8;
+      }
+      .xp-dialog-icon {
+        width: 32px;
+        height: 32px;
+      }
+      .xp-dialog-text {
+        color: #000;
+        line-height: 1.5;
+      }
+      .xp-dialog-footer {
+        padding: 10px 16px 12px;
+        display: flex;
+        justify-content: center;
+        background: #f1f0e8;
+      }
+      .xp-dialog-btn {
+        min-width: 75px;
+        padding: 4px 10px;
+        background: #f1f0e8;
+        border: 1px solid #7f9db9;
+        border-radius: 3px;
+        font-family: inherit;
+        font-size: 11px;
+        cursor: pointer;
+        outline: none;
+      }
+      .xp-dialog-btn:hover {
+        background: #e5f1fb;
+        border-color: #0054e3;
+      }
+      .xp-dialog-btn:focus {
+        border-color: #0054e3;
+        box-shadow: 0 0 3px rgba(0, 84, 227, 0.4);
+      }
+      
+      /* Desktop grid improvements for multiple icons */
+      .desktop-grid {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .desktop-icon span {
+        text-align: center;
+        font-size: 12px;
+        font-weight: 500;
+        margin-top: 4px;
+        width: 100%;
+        white-space: normal;
+        word-wrap: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Boot Screen -->
+    <div id="boot-screen" class="xp-boot">
+      <div class="boot-card">
+        <img class="boot-logo" src="sources/windows_xp_logo_256.png" alt="Windows XP" />
+        <h1 class="boot-title">Загрузка Windows XP Launcher</h1>
+        <div class="boot-progress"></div>
+        <p class="boot-hint">Подготовка рабочего стола...</p>
+        <button id="boot-skip" class="boot-skip" type="button">Пропустить</button>
+      </div>
+    </div>
+
+    <!-- Main Desktop -->
+    <div id="desktop" class="xp-desktop is-hidden">
+      <div class="desktop-grid">
+        <!-- Neon Pong -->
+        <button class="desktop-icon" data-game="pong" aria-label="Запустить Neon Pong">
+          <img src="sources/ico_pingpong_96.png" alt="Neon Pong" />
+          <span>Neon Pong</span>
+        </button>
+
+        <!-- Slither.io -->
+        <button class="desktop-icon" data-game="slither" aria-label="Запустить Slither.io">
+          <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(90deg);" alt="Slither.io" />
+          <span>Slither.io Clone</span>
+        </button>
+
+        <!-- 2D Platformer -->
+        <button class="desktop-icon" data-game="platformer" aria-label="Запустить 2D-платформер">
+          <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(200deg);" alt="2D Platformer" />
+          <span>Paper Platformer</span>
+        </button>
+
+        <!-- Real-time Cursors -->
+        <button class="desktop-icon" data-game="cursors" aria-label="Запустить Курсоры">
+          <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(280deg);" alt="Cursors" />
+          <span>Cursor Sync</span>
+        </button>
+
+        <!-- Card Game -->
+        <button class="desktop-icon" data-game="cards" aria-label="Запустить Карты">
+          <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(45deg);" alt="Cards" />
+          <span>Neon Cards</span>
+        </button>
+      </div>
+      
+      <div id="selection-box" class="selection-box" aria-hidden="true"></div>
+
+      <!-- Taskbar -->
+      <div class="taskbar">
+        <button id="start-btn" class="start-button" type="button">
+          <img src="sources/windows_xp_logo_64.png" alt="" />
+          <span>Пуск</span>
+        </button>
+        <div class="task-buttons">
+          <!-- Empty task buttons container -->
+        </div>
+        <div id="task-clock" class="task-clock" aria-live="polite">--:--</div>
+      </div>
+
+      <!-- Start Menu -->
+      <div id="start-menu" class="start-menu is-hidden" role="menu">
+        <div class="start-menu-header">
+          <img src="sources/windows_xp_logo_64.png" alt="" />
+          <div>
+            <div class="start-menu-title">Windows XP</div>
+            <div class="start-menu-sub">Игры и развлечения</div>
+          </div>
+        </div>
+        <div class="start-menu-body">
+          <button class="start-menu-item" data-game="pong" type="button">
+            <img src="sources/ico_pingpong_64.png" alt="" />
+            <div>
+              <span>Neon Pong</span>
+              <small>Аркадный неоновый пинг-понг</small>
+            </div>
+          </button>
+          
+          <button class="start-menu-item" data-game="slither" type="button">
+            <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(90deg);" alt="" />
+            <div>
+              <span>Slither.io Clone</span>
+              <small>Мультиплеерная змейка</small>
+            </div>
+          </button>
+          
+          <button class="start-menu-item" data-game="platformer" type="button">
+            <img src="sources/windows_xp_logo_64.png" style="filter: hue-rotate(200deg);" alt="" />
+            <div>
+              <span>Paper Platformer</span>
+              <small>Рисованный соревновательный 2D-платформер</small>
+            </div>
+          </button>
+
+          <button class="start-menu-item" data-action="lock" type="button" style="margin-top: 15px; border-top: 1px solid #dce7f7; padding-top: 10px;">
+            <img src="sources/shutdown_48.png" alt="" />
+            <div>
+              <span>Выход из системы</span>
+              <small>Заблокировать рабочий стол</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Authentic Windows XP Dialog Alert -->
+    <div id="xp-dialog" class="xp-error-dialog is-hidden" role="dialog" aria-modal="true">
+      <div class="xp-dialog-titlebar">
+        <span id="dialog-title">Windows XP</span>
+        <button class="xp-dialog-close" id="dialog-close-btn" type="button">×</button>
+      </div>
+      <div class="xp-dialog-body">
+        <img class="xp-dialog-icon" id="dialog-icon" src="sources/shutdown_48.png" alt="Alert" />
+        <div class="xp-dialog-text" id="dialog-text">Эта игра находится в разработке. Зайдите позже!</div>
+      </div>
+      <div class="xp-dialog-footer">
+        <button class="xp-dialog-btn" id="dialog-ok-btn" type="button">ОК</button>
+      </div>
+    </div>
+
+    <!-- Sound Effects -->
+    <audio id="sound-startup" src="audio/win_xp/Windows XP Startup.wav" preload="auto"></audio>
+    <audio id="sound-shutdown" src="audio/win_xp/Windows XP Shutdown.wav" preload="auto"></audio>
+    <audio id="sound-menu" src="audio/win_xp/Windows XP Menu Command.wav" preload="auto"></audio>
+    <audio id="sound-open" src="audio/win_xp/windows-navigation-start.mp3" preload="auto"></audio>
+    <audio id="sound-ding" src="audio/win_xp/windows-xp-ding.mp3" preload="auto"></audio>
+    <audio id="sound-error" src="audio/win_xp/Windows XP Error.wav" preload="auto"></audio>
+
+    <script src="xp.js"></script>
+  </body>
+</html>

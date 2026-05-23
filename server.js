@@ -1,16 +1,26 @@
+const express = require("express");
 const http = require("http");
-const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
+const socketIo = require("socket.io");
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
-const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
+// Serve all static assets inside the client folder
+app.use(express.static(path.join(ROOT, "client")));
 
 const BASE = { w: 1280, h: 720 };
 const PADDLE = { w: 18, h: 130 };
 const BALL = { r: 10, speed: 520, maxSpeed: 980 };
-
 
 const rooms = new Map();
 
@@ -92,94 +102,16 @@ function checkPaddleCollision(state, paddle, direction) {
   return true;
 }
 
-function encodeFrame(text) {
-  const payload = Buffer.from(text);
-  const length = payload.length;
-  let header = null;
-  if (length < 126) {
-    header = Buffer.alloc(2);
-    header[1] = length;
-  } else if (length < 65536) {
-    header = Buffer.alloc(4);
-    header[1] = 126;
-    header.writeUInt16BE(length, 2);
-  } else {
-    header = Buffer.alloc(10);
-    header[1] = 127;
-    header.writeUInt32BE(0, 2);
-    header.writeUInt32BE(length, 6);
-  }
-  header[0] = 0x81;
-  return Buffer.concat([header, payload]);
-}
-
 class Client {
   constructor(socket) {
     this.socket = socket;
-    this.buffer = Buffer.alloc(0);
     this.room = null;
     this.role = null;
   }
 
   send(data) {
-    if (this.socket.destroyed) return;
-    const payload = JSON.stringify(data);
-    this.socket.write(encodeFrame(payload));
-  }
-
-  handleData(data) {
-    this.buffer = Buffer.concat([this.buffer, data]);
-    let offset = 0;
-    while (offset + 2 <= this.buffer.length) {
-      const first = this.buffer[offset];
-      const second = this.buffer[offset + 1];
-      const opcode = first & 0x0f;
-      const masked = (second & 0x80) !== 0;
-      let length = second & 0x7f;
-      let headerLength = 2;
-
-      if (length === 126) {
-        if (offset + 4 > this.buffer.length) break;
-        length = this.buffer.readUInt16BE(offset + 2);
-        headerLength = 4;
-      } else if (length === 127) {
-        if (offset + 10 > this.buffer.length) break;
-        length = this.buffer.readUInt32BE(offset + 6);
-        headerLength = 10;
-      }
-
-      const maskStart = offset + headerLength;
-      const maskEnd = maskStart + (masked ? 4 : 0);
-      const payloadStart = maskEnd;
-      const payloadEnd = payloadStart + length;
-
-      if (payloadEnd > this.buffer.length) break;
-
-      let payload = this.buffer.slice(payloadStart, payloadEnd);
-      if (masked) {
-        const mask = this.buffer.slice(maskStart, maskEnd);
-        const decoded = Buffer.alloc(payload.length);
-        for (let i = 0; i < payload.length; i += 1) {
-          decoded[i] = payload[i] ^ mask[i % 4];
-        }
-        payload = decoded;
-      }
-
-      if (opcode === 0x8) {
-        this.close();
-        return;
-      }
-
-      if (opcode === 0x1) {
-        this.handleMessage(payload.toString("utf8"));
-      }
-
-      offset = payloadEnd;
-    }
-
-    if (offset > 0) {
-      this.buffer = this.buffer.slice(offset);
-    }
+    if (!this.socket.connected) return;
+    this.socket.send(JSON.stringify(data));
   }
 
   handleMessage(raw) {
@@ -248,9 +180,6 @@ class Client {
   close() {
     if (this.room) {
       this.room.removeClient(this);
-    }
-    if (!this.socket.destroyed) {
-      this.socket.destroy();
     }
   }
 }
@@ -415,65 +344,23 @@ function createRoom(client, scoreLimit) {
   return room;
 }
 
-function serveFile(filePath, res) {
-  fs.readFile(filePath, (err, data) => {
-    if (err) {
-      res.writeHead(404);
-      res.end("Not found");
-      return;
-    }
-    const ext = path.extname(filePath);
-    const type = {
-      ".html": "text/html",
-      ".css": "text/css",
-      ".js": "text/javascript",
-      ".mp3": "audio/mpeg",
-      ".wav": "audio/wav",
-    }[ext] || "application/octet-stream";
-    res.writeHead(200, { "Content-Type": type });
-    res.end(data);
-  });
-}
-
-const server = http.createServer((req, res) => {
-  const urlPath = req.url === "/" ? "/index.html" : req.url;
-  const filePath = path.join(ROOT, urlPath);
-  if (!filePath.startsWith(ROOT)) {
-    res.writeHead(403);
-    res.end("Forbidden");
-    return;
-  }
-  serveFile(filePath, res);
-});
-
-server.on("upgrade", (req, socket) => {
-  if (req.url !== "/ws") {
-    socket.destroy();
-    return;
-  }
-  const key = req.headers["sec-websocket-key"];
-  if (!key) {
-    socket.destroy();
-    return;
-  }
-  const accept = crypto
-    .createHash("sha1")
-    .update(key + WS_GUID)
-    .digest("base64");
-
-  socket.write(
-    "HTTP/1.1 101 Switching Protocols\r\n" +
-      "Upgrade: websocket\r\n" +
-      "Connection: Upgrade\r\n" +
-      `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
-  );
-
+// Socket.io Connection Handler
+io.on("connection", (socket) => {
   const client = new Client(socket);
-  socket.on("data", (data) => client.handleData(data));
-  socket.on("close", () => client.close());
-  socket.on("end", () => client.close());
+  
+  socket.on("message", (data) => {
+    client.handleMessage(data);
+  });
+  
+  socket.on("disconnect", () => {
+    client.close();
+  });
+  
+  socket.on("error", () => {
+    client.close();
+  });
 });
 
 server.listen(PORT, () => {
-  console.log(`Neon Pong server running on http://localhost:${PORT}`);
+  console.log(`Express + Socket.io Games Server running on http://localhost:${PORT}`);
 });

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XP Arcade Launcher</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="xp.css" />
+  </head>
+  <body>
+    <div id="boot-screen" class="xp-boot">
+      <div class="boot-card">
+        <img class="boot-logo" src="sources/windows_xp_logo_256.png" alt="Windows XP" />
+        <h1 class="boot-title">Загрузка Windows XP Launcher</h1>
+        <div class="boot-progress"></div>
+        <p class="boot-hint">Подготовка рабочего стола...</p>
+        <button id="boot-skip" class="boot-skip" type="button">Пропустить</button>
+      </div>
+    </div>
+
+    <div id="desktop" class="xp-desktop is-hidden">
+      <div class="desktop-grid">
+        <button id="icon-pong" class="desktop-icon" aria-label="Запустить Neon Pong">
+          <img src="sources/ico_pingpong_96.png" alt="" />
+          <span>Neon Pong</span>
+        </button>
+      </div>
+      <div id="selection-box" class="selection-box" aria-hidden="true"></div>
+
+      <div class="taskbar">
+        <button id="start-btn" class="start-button" type="button">
+          <img src="sources/windows_xp_logo_64.png" alt="" />
+          <span>Пуск</span>
+        </button>
+        <div class="task-buttons">
+          <button id="task-pong" class="task-button is-hidden" type="button">
+            <img src="sources/ico_pingpong_64.png" alt="" />
+            <span>Neon Pong</span>
+          </button>
+        </div>
+        <div id="task-clock" class="task-clock" aria-live="polite"></div>
+      </div>
+
+      <div id="start-menu" class="start-menu is-hidden" role="menu">
+        <div class="start-menu-header">
+          <img src="sources/windows_xp_logo_64.png" alt="" />
+          <div>
+            <div class="start-menu-title">Windows XP</div>
+            <div class="start-menu-sub">Игры и развлечения</div>
+          </div>
+        </div>
+        <div class="start-menu-body">
+          <button class="start-menu-item" data-app="pong" type="button">
+            <img src="sources/ico_pingpong_64.png" alt="" />
+            <div>
+              <span>Neon Pong</span>
+              <small>Аркада с локальным и онлайн режимом</small>
+            </div>
+          </button>
+          <button class="start-menu-item" data-action="lock" type="button">
+            <img src="sources/shutdown_48.png" alt="" />
+            <div>
+              <span>Выход из системы</span>
+              <small>Заблокировать рабочий стол</small>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="xp-window-pong" class="xp-window is-hidden" role="dialog" aria-modal="false">
+      <div class="xp-titlebar">
+        <div class="xp-title">
+          <img src="sources/ico_pingpong_64.png" alt="" />
+          <span>Neon Pong</span>
+        </div>
+        <div class="xp-window-actions">
+          <button type="button" class="fullscreen" data-action="fullscreen" aria-label="Полный экран">⛶</button>
+          <button type="button" data-action="minimize" aria-label="Свернуть">_</button>
+          <button type="button" data-action="close" aria-label="Закрыть">×</button>
+        </div>
+      </div>
+      <div class="xp-window-body">
+        <div id="app" class="app">
+          <canvas id="game" class="game" aria-label="Neon Pong"></canvas>
+
+          <div id="hud" class="hud">
+            <div class="score" aria-live="polite">
+              <span id="score-left" class="score-value">0</span>
+              <span class="score-divider">:</span>
+              <span id="score-right" class="score-value">0</span>
+            </div>
+            <div id="status-text" class="status">Пауза</div>
+          </div>
+          <div id="winner-banner" class="winner-banner" aria-live="polite"></div>
+
+          <div id="menu" class="menu is-visible" role="dialog" aria-modal="true">
+            <div class="menu-panel">
+              <div class="menu-glow"></div>
+              <div class="menu-body">
+                <div id="screen-main" class="menu-screen is-active">
+                  <div class="menu-actions">
+                    <button id="local-btn" class="btn btn-primary">Игра на одном ПК</button>
+                    <button id="online-btn" class="btn btn-ghost">Мультиплеер</button>
+                    <button id="settings-btn" class="btn btn-ghost">Настройки</button>
+                    <button id="restart-btn" class="btn btn-ghost">Перезапуск</button>
+                  </div>
+
+                  <div class="menu-controls">
+                    <div class="control-block">
+                      <h2>Локальная игра</h2>
+                      <p>Левый: W / S</p>
+                      <p>Правый: ↑ / ↓</p>
+                    </div>
+                    <div class="control-block">
+                      <h2>Онлайн</h2>
+                      <p>↑ / ↓ + мышь</p>
+                    </div>
+                    <div class="control-block">
+                      <h2>Глобально</h2>
+                      <p>Space — пауза/продолжить</p>
+                      <p>Esc — меню</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="screen-lobby" class="menu-screen">
+                  <div class="lobby-grid">
+                    <div class="lobby-card">
+                      <h2>Создать лобби</h2>
+                      <button id="create-lobby-btn" class="btn btn-primary">Создать</button>
+                      <div id="lobby-code" class="lobby-code">----</div>
+                      <p id="lobby-status" class="lobby-status">Ожидание</p>
+                    </div>
+                    <div class="lobby-card">
+                      <h2>Подключиться</h2>
+                      <div id="join-code" class="code-input" role="group" aria-label="Код комнаты">
+                        <input class="code-box" inputmode="text" maxlength="1" aria-label="Код 1" />
+                        <input class="code-box" inputmode="text" maxlength="1" aria-label="Код 2" />
+                        <input class="code-box" inputmode="text" maxlength="1" aria-label="Код 3" />
+                        <input class="code-box" inputmode="text" maxlength="1" aria-label="Код 4" />
+                      </div>
+                      <button id="join-lobby-btn" class="btn btn-ghost">Подключиться</button>
+                    </div>
+                  </div>
+                  <div class="lobby-actions">
+                    <button id="lobby-back-btn" class="btn btn-ghost">Назад</button>
+                    <button id="lobby-leave-btn" class="btn btn-ghost" disabled>Отключиться</button>
+                  </div>
+                </div>
+
+                <div id="screen-settings" class="menu-screen">
+                  <div class="settings-grid">
+                    <label class="toggle toggle-card">
+                      <input id="toggle-music" type="checkbox" checked />
+                      <span>Музыка</span>
+                    </label>
+                    <label class="toggle toggle-card">
+                      <input id="toggle-sfx" type="checkbox" checked />
+                      <span>SFX</span>
+                    </label>
+                    <label class="toggle toggle-card">
+                      <input id="toggle-vfx" type="checkbox" checked />
+                      <span>Glow Boost</span>
+                    </label>
+                  </div>
+                  <div class="lobby-actions">
+                    <button id="settings-back-btn" class="btn btn-ghost">Назад</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="sound-startup" src="audio/win_xp/Windows XP Startup.wav" preload="auto"></audio>
+    <audio id="sound-shutdown" src="audio/win_xp/Windows XP Shutdown.wav" preload="auto"></audio>
+    <audio id="sound-menu" src="audio/win_xp/Windows XP Menu Command.wav" preload="auto"></audio>
+    <audio id="sound-open" src="audio/win_xp/windows-navigation-start.mp3" preload="auto"></audio>
+
+    <script src="main.js"></script>
+    <script src="xp.js"></script>
+  </body>
+</html>
